@@ -1,0 +1,63 @@
+---
+
+# docker run -d --privileged -e CATTLE_AGENT_IP=123.123.5.5 -v /var/run/docker.sock:/var/run/docker.sock rancher/agent:v0.7.10 http://123.123.5.5:8080/v1/scripts/HEXCHARACTERS:NUMBERS:RANDOMSTRING
+
+- name: get host ip address
+  inventory:
+    name: "{{ name }}"
+  register: vm
+
+- debug: var=vm
+
+- name: is rancher-agent running
+  shell: >
+    docker --tlsverify --tlscacert="{{ vm.config.cacert_path }}" 
+    --tlscert="{{ vm.config.cert_path }}" --tlskey="{{ vm.config.key_path }}" 
+    -H="{{ vm.config.docker_host }}" 
+    inspect -f "{{ '{{' }} .State.Running {{ '}}' }}" rancher-agent
+  ignore_errors: yes
+  register: rancher_agent_running
+
+- debug: var=rancher_agent_running
+
+- name: get rancher agent token
+  rancher:
+    rancher_environment: "{{ rancher_environment }}"
+    api_url: "http://{{ vm.config.ip }}:{{ rancher.server.port.http }}"
+    action: token
+  register: rancher_config
+  when: rancher_agent_running != "true"
+  
+- debug: var=rancher_config
+
+- name: (re)start rancher-agent
+  docker_container:
+    name: "{{ name }}-agent-bootstrap"
+    image: "{{ rancher.agent.image }}"
+    state: started
+    recreate: false
+    restart_policy: false
+    volumes:
+      - /var/lib/rancher:/var/lib/rancher
+      - /var/run/docker.sock:/var/run/docker.sock
+    privileged: true
+    command:  "http://{{ vm.config.ip }}:{{ rancher.server.port.http }}/v1/scripts/{{ rancher_config.token }}"
+    tls:         "{{ vm.config.tls }}"
+    key_path:    "{{ vm.config.key_path }}"
+    cert_path:   "{{ vm.config.cert_path }}"
+    cacert_path: "{{ vm.config.cacert_path }}"
+    docker_host: "{{ vm.config.docker_host }}"
+  register: rancher_agent
+  when: rancher_agent_running != "true"
+
+- debug: var=rancher_agent
+
+# - name: is rancher-agent running
+#   shell: >
+#     docker --tlsverify --tlscacert="{{ vm.config.cacert_path }}" 
+#     --tlscert="{{ vm.config.cert_path }}" --tlskey="{{ vm.config.key_path }}" 
+#     -H="{{ vm.config.docker_host }}" 
+#     {{ rancher_config.meta.docker_command[rancher_config.meta.docker_command.index("run"):] }}
+#   register: rancher_agent
+
+# - debug: var=rancher_agent

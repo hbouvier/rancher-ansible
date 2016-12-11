@@ -1,0 +1,8 @@
+---
+- name: Regenerate TLS Certificates
+  regenerate_certificats:
+    name: "{{ name }}"
+    driver: "{{ driver }}"
+  register: certificate
+
+- debug: var=certificate

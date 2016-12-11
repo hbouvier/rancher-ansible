@@ -1,0 +1,18 @@
+---
+- debug: var=rancher.os.iso
+
+- name: create a docker host
+  provision:
+    name: "{{ name }}"
+    state: present
+    driver: "{{ driver }}"
+    virtualbox_boot2docker_url: "{{ rancher.os.iso }}"
+    virtualbox_memory: "{{ memory }}"
+    virtualbox_cpu_count: "{{ cpu }}"
+    virtualbox_disk_size: "{{ disk_size  }}"
+  register: vm
+
+- debug: var=vm
+
+- include: fix.yml
+  when: mode == "fix"

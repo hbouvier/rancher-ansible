@@ -1,0 +1,28 @@
+---
+- name: get host ip address
+  inventory:
+    name: "{{ name }}"
+  register: vm
+
+- debug: var=vm
+
+- name: (re)start rancher
+  docker_container:
+    name: "{{name}}"
+    image: "{{ rancher.server.image }}"
+    state: started
+    recreate: "{{ docker.recreate }}"
+    restart_policy: "{{ docker.restart.policy }}"
+    hostname: "{{name}}"
+    expose:
+      - 8080
+    ports:
+      - "{{ rancher.server.port.http }}:8080"
+    tls:         "{{ vm.config.tls }}"
+    key_path:    "{{ vm.config.key_path }}"
+    cert_path:   "{{ vm.config.cert_path }}"
+    cacert_path: "{{ vm.config.cacert_path }}"
+    docker_host: "{{ vm.config.docker_host }}"
+  register: rancher_server
+
+- debug: var=rancher_server

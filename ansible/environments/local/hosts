@@ -1,0 +1,5 @@
+; used for local actions only
+ansible ansible_connection=local
+
+[rancher]
+rancher         ansible_connection=local ansible_host=127.0.0.1

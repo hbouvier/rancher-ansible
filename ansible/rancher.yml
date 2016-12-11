@@ -1,0 +1,6 @@
+# PYTHONPATH=./library/modules ansible-playbook -i environments/local rancher.yml
+- hosts: rancher
+  roles:
+    - { role: machine,        name: "{{inventory_hostname}}", driver: virtualbox, cpu: 4, memory: 4096, disk_size: 100000}
+    - { role: rancher,        name: "{{inventory_hostname}}" }
+    - { role: rancher-agent,  name: "{{inventory_hostname}}", rancher_environment: Default }
